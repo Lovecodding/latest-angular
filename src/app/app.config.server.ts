@@ -1,11 +1,23 @@
 import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
 import { provideServerRendering } from '@angular/platform-server';
-import { appConfig } from './app.config';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideRouter } from '@angular/router';
+import { routes } from './app.routes';
+import { IMAGE_CONFIG } from '@angular/common';
 
 const serverConfig: ApplicationConfig = {
   providers: [
-    provideServerRendering()
+    provideRouter(routes),
+    provideServerRendering(),
+    provideNoopAnimations(),
+    {
+      provide: IMAGE_CONFIG,
+      useValue: {
+        disableImageSizeWarning: true,
+        disableImageLazyLoadWarning: true
+      }
+    }
   ]
 };
 
-export const config = mergeApplicationConfig(appConfig, serverConfig);
+export const config = serverConfig;
