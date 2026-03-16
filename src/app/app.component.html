@@ -1,6 +1,24 @@
-<mat-toolbar color="primary" routerLink="/">
-  <span>Angular 17 features</span>
+<mat-toolbar color="primary">
+  @if (isAuthenticated) {
+    <button mat-icon-button routerLink="/users/user-list">
+      <mat-icon>dashboard</mat-icon>
+    </button>
+  }
+  <span class="app-title" routerLink="/" style="cursor: pointer;">User Management System</span>
   <span class="example-spacer"></span>
+  
+  @if (currentUser$ | async; as user) {
+    <div class="user-menu">
+      <span class="user-info">
+        <mat-icon>account_circle</mat-icon>
+        {{ user.name }}
+      </span>
+      <button mat-button (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Logout
+      </button>
+    </div>
+  }
 </mat-toolbar>
 
 <router-outlet></router-outlet>
