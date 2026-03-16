@@ -1,0 +1,45 @@
+<button #click>Load HelloComponent</button>
+@defer (on interaction(click)) {
+<div>Clicked</div>
+}
+
+<div #notification>Viewport Example!</div>
+
+@defer (on viewport(notification)){
+<div>call on refresh.</div>
+}
+
+<div class="flex-container">
+    @for (duck of [1,2,3];track duck) {
+    <div>in loop{{duck}}</div>
+    }
+</div>
+
+<div style="padding: 50px; max-width: 1024px">
+    @defer (on viewport){
+    <div>Viral is here!.</div>
+    } @placeholder (minimum 2000ms) {
+    <div>Loading.. Wait for the Viral...</div>
+    }
+</div>
+
+<div>
+    <input #checkboxDefer type="checkbox" [checked]="isVisible()" (change)="isVisible.set(checkboxDefer.checked)"
+        id="checkboxDefer" />
+    <label for="checkboxDefer">Open the network tab of the browser's developer tools, then check this checkbox to load
+        the <strong>app-c1</strong> component</label>
+</div>
+<br>
+
+@defer (when isVisible()) {
+<af-signal />
+}
+@placeholder {
+<span>Placeholder</span>
+}
+@error {
+<span>Error</span>
+}
+@loading(minimum 2s) {
+<span>Loading...</span>
+}
