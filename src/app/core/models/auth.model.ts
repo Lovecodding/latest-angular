@@ -5,22 +5,9 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  refreshToken?: string;
-  user: UserInfo;
-  expiresIn: number;
-}
-
-export interface UserInfo {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-}
-
-export interface TokenPayload {
-  sub: string;
-  email: string;
-  role: string;
-  exp: number;
-  iat: number;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+  };
 }

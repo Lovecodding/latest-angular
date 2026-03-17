@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthGuard implements CanActivate {
+  
   constructor(
     private authService: AuthService,
     private router: Router
@@ -15,20 +15,12 @@ export class AuthGuard implements CanActivate {
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
-  ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    
+  ): boolean {
     if (this.authService.isAuthenticated()) {
-      // Check if route requires specific role
-      const requiredRole = route.data['role'] as string;
-      if (requiredRole && !this.authService.hasRole(requiredRole)) {
-        this.router.navigate(['/unauthorized']);
-        return false;
-      }
       return true;
     }
 
-    // Not authenticated, redirect to login with return URL
-    this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+    this.router.navigate(['/login']);
     return false;
   }
 }

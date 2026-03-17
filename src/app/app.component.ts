@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from './core/services/auth.service';
-import { UserInfo } from './core/models/auth.model';
-import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 
 @Component({
@@ -11,20 +9,15 @@ import { MatDialog } from '@angular/material/dialog';
   standalone: false
 })
 export class AppComponent implements OnInit {
-  currentUser$: Observable<UserInfo | null>;
   isAuthenticated = false;
 
   constructor(
     private authService: AuthService,
     private dialog: MatDialog
-  ) {
-    this.currentUser$ = this.authService.currentUser$;
-  }
+  ) {}
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
-      this.isAuthenticated = !!user;
-    });
+    this.isAuthenticated = this.authService.isAuthenticated();
   }
 
   logout(): void {
