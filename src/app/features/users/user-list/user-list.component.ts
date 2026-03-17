@@ -1,15 +1,33 @@
 import { Component, OnInit } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, startWith } from 'rxjs/operators';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ApiService } from '../../../core/services/api.service';
 import { User } from '../../../core/models/user.model';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-user-list',
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.scss'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTableModule,
+    MatButtonModule,
+    MatPaginatorModule,
+    MatCardModule
+  ]
 })
 export class UserListComponent implements OnInit {
   users: User[] = [];
@@ -25,22 +43,23 @@ export class UserListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Restore state from query params
-    this.route.queryParamMap.subscribe(params => {
-      const search = params.get('search') || '';
-      const page = +(params.get('page') || 1);
+    // Load users first
+    this.apiService.getUsers().subscribe((users: User[]) => {
+      this.users = users;
+      
+      // Then restore state from query params
+      const search = this.route.snapshot.queryParamMap.get('search') || '';
+      const page = +(this.route.snapshot.queryParamMap.get('page') || 1);
+      
       this.searchControl.setValue(search, { emitEvent: false });
       this.page = page;
       this.applyFilter();
     });
-    this.apiService.getUsers().subscribe((users: User[]) => {
-      this.users = users;
-      this.applyFilter();
-    });
+
+    // Listen to search changes
     this.searchControl.valueChanges.pipe(
       debounceTime(300),
-      distinctUntilChanged(),
-      startWith('')
+      distinctUntilChanged()
     ).subscribe(val => {
       this.page = 1;
       this.updateQueryParams();

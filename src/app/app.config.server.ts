@@ -1,13 +1,11 @@
 import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
 import { provideServerRendering } from '@angular/platform-server';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
-import { routes } from './app.routes';
+import { appConfig } from './app.config';
 import { IMAGE_CONFIG } from '@angular/common';
 
 const serverConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes),
     provideServerRendering(),
     provideNoopAnimations(),
     {
@@ -20,4 +18,4 @@ const serverConfig: ApplicationConfig = {
   ]
 };
 
-export const config = serverConfig;
+export const config = mergeApplicationConfig(appConfig, serverConfig);
