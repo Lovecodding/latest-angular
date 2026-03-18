@@ -47,12 +47,14 @@ export class UserListComponent implements OnInit {
     this.apiService.getUsers().subscribe((users: User[]) => {
       this.users = users;
       
-      // Then restore state from query params
-      const search = this.route.snapshot.queryParamMap.get('search') || '';
-      const page = +(this.route.snapshot.queryParamMap.get('page') || 1);
-      
-      this.searchControl.setValue(search, { emitEvent: false });
-      this.page = page;
+      // Restore state from sessionStorage if returning from detail page
+      const savedState = sessionStorage.getItem('userListState');
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        this.searchControl.setValue(state.search || '', { emitEvent: false });
+        this.page = state.page || 1;
+        sessionStorage.removeItem('userListState'); // Clear after restoring
+      }
       this.applyFilter();
     });
 
@@ -62,7 +64,6 @@ export class UserListComponent implements OnInit {
       distinctUntilChanged()
     ).subscribe(val => {
       this.page = 1;
-      this.updateQueryParams();
       this.applyFilter();
     });
   }
@@ -83,18 +84,19 @@ export class UserListComponent implements OnInit {
 
   setPage(page: number): void {
     this.page = page;
-    this.updateQueryParams();
   }
 
-  updateQueryParams(): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {
-        search: this.searchControl.value || '',
-        page: this.page
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true
+  viewUserDetail(user: User): void {
+    // Save current filter state to sessionStorage
+    const state = {
+      search: this.searchControl.value || '',
+      page: this.page
+    };
+    sessionStorage.setItem('userListState', JSON.stringify(state));
+    
+    // Navigate with user data in state
+    this.router.navigate(['/users/user-detail', user.id], {
+      state: { user }
     });
   }
 }
