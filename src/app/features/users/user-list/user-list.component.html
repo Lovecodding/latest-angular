@@ -4,7 +4,17 @@
     <input matInput [formControl]="searchControl" placeholder="Name, email, or username">
   </mat-form-field>
 
-  <table mat-table [dataSource]="paginatedUsers" class="mat-elevation-z8">
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Filter by</mat-label>
+    <mat-select [formControl]="filterControl" multiple>
+      @for (option of filterOptions; track option.value) {
+        <mat-option [value]="option.value">{{ option.label }}</mat-option>
+      }
+    </mat-select>
+    <mat-hint>Select multiple filters</mat-hint>
+  </mat-form-field>
+
+  <table mat-table [dataSource]="paginatedUsers()" class="mat-elevation-z8">
     <ng-container matColumnDef="name">
       <th mat-header-cell *matHeaderCellDef>Name</th>
       <td mat-cell *matCellDef="let user">{{ user.name }}</td>
@@ -27,6 +37,6 @@
     <tr mat-row *matRowDef="let row; columns: ['name', 'email', 'username', 'actions'];"></tr>
   </table>
 
-  <mat-paginator [length]="filteredUsers.length" [pageSize]="pageSize" [pageIndex]="page-1"
+  <mat-paginator [length]="filteredUsers().length" [pageSize]="pageSize" [pageIndex]="currentPage()-1"
     (page)="setPage($event.pageIndex + 1)"></mat-paginator>
 </div>

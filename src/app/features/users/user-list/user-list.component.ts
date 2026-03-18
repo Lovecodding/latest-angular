@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ApiService } from '../../../core/services/api.service';
@@ -7,6 +7,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatPaginatorModule } from '@angular/material/paginator';
@@ -23,6 +24,7 @@ import { MatCardModule } from '@angular/material/card';
     RouterModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatTableModule,
     MatButtonModule,
     MatPaginatorModule,
@@ -30,11 +32,68 @@ import { MatCardModule } from '@angular/material/card';
   ]
 })
 export class UserListComponent implements OnInit {
-  users: User[] = [];
-  filteredUsers: User[] = [];
-  searchControl = new FormControl('');
-  page = 1;
+  // Signals for reactive state
+  users = signal<User[]>([]);
+  searchTerm = signal<string>('');
+  selectedFilters = signal<string[]>([]);
+  currentPage = signal<number>(1);
   pageSize = 5;
+
+  // Filter options for multi-select
+  filterOptions = [
+    { value: 'hasCompany', label: 'Has Company' },
+    { value: 'hasCity', label: 'Has City' },
+    { value: 'hasPhone', label: 'Has Phone' },
+    { value: 'hasWebsite', label: 'Has Website' }
+  ];
+
+  // Form controls
+  searchControl = new FormControl('');
+  filterControl = new FormControl<string[]>([]);
+
+  // Computed signal for filtered users
+  filteredUsers = computed(() => {
+    const users = this.users();
+    const search = this.searchTerm().toLowerCase();
+    const filters = this.selectedFilters();
+
+    return users.filter(user => {
+      // Apply search filter
+      const matchesSearch = !search || 
+        user.name.toLowerCase().includes(search) ||
+        user.email.toLowerCase().includes(search) ||
+        user.username.toLowerCase().includes(search);
+      
+      // Apply multi-select filters (all selected filters must match)
+      let matchesFilters = true;
+      if (filters.length > 0) {
+        matchesFilters = filters.every(filter => {
+          switch(filter) {
+            case 'hasCompany':
+              return !!(user.company && user.company.name);
+            case 'hasCity':
+              return !!(user.address && user.address.city);
+            case 'hasPhone':
+              return !!user.phone;
+            case 'hasWebsite':
+              return !!user.website;
+            default:
+              return true;
+          }
+        });
+      }
+      
+      return matchesSearch && matchesFilters;
+    });
+  });
+
+  // Computed signal for paginated users
+  paginatedUsers = computed(() => {
+    const filtered = this.filteredUsers();
+    const page = this.currentPage();
+    const start = (page - 1) * this.pageSize;
+    return filtered.slice(start, start + this.pageSize);
+  });
 
   constructor(
     private apiService: ApiService,
@@ -45,17 +104,19 @@ export class UserListComponent implements OnInit {
   ngOnInit(): void {
     // Load users first
     this.apiService.getUsers().subscribe((users: User[]) => {
-      this.users = users;
+      this.users.set(users);
       
       // Restore state from sessionStorage if returning from detail page
       const savedState = sessionStorage.getItem('userListState');
       if (savedState) {
         const state = JSON.parse(savedState);
         this.searchControl.setValue(state.search || '', { emitEvent: false });
-        this.page = state.page || 1;
+        this.filterControl.setValue(state.filters || [], { emitEvent: false });
+        this.searchTerm.set(state.search || '');
+        this.selectedFilters.set(state.filters || []);
+        this.currentPage.set(state.page || 1);
         sessionStorage.removeItem('userListState'); // Clear after restoring
       }
-      this.applyFilter();
     });
 
     // Listen to search changes
@@ -63,34 +124,27 @@ export class UserListComponent implements OnInit {
       debounceTime(300),
       distinctUntilChanged()
     ).subscribe(val => {
-      this.page = 1;
-      this.applyFilter();
+      this.searchTerm.set(val || '');
+      this.currentPage.set(1);
+    });
+
+    // Listen to filter changes
+    this.filterControl.valueChanges.subscribe(val => {
+      this.selectedFilters.set(val || []);
+      this.currentPage.set(1);
     });
   }
 
-  applyFilter(): void {
-    const search = this.searchControl.value?.toLowerCase() || '';
-    this.filteredUsers = this.users.filter(user =>
-      user.name.toLowerCase().includes(search) ||
-      user.email.toLowerCase().includes(search) ||
-      user.username.toLowerCase().includes(search)
-    );
-  }
-
-  get paginatedUsers(): User[] {
-    const start = (this.page - 1) * this.pageSize;
-    return this.filteredUsers.slice(start, start + this.pageSize);
-  }
-
   setPage(page: number): void {
-    this.page = page;
+    this.currentPage.set(page);
   }
 
   viewUserDetail(user: User): void {
     // Save current filter state to sessionStorage
     const state = {
-      search: this.searchControl.value || '',
-      page: this.page
+      search: this.searchTerm(),
+      filters: this.selectedFilters(),
+      page: this.currentPage()
     };
     sessionStorage.setItem('userListState', JSON.stringify(state));
     
